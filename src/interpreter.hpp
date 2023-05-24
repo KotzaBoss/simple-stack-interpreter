@@ -332,10 +332,12 @@ private:
 					std::cerr << "\tError: arguments expected\n";
 					interpreter.state = State::Error;
 				}
-				else {
-					interpreter._stack.pop_n(*instr.arg);
-					interpreter.state = State::Running;
+				else if (not interpreter._stack.pop_n(*instr.arg)) {
+					std::cerr << "\tError: stack does not have at least " << *instr.arg << " ints\n";
+					interpreter.state = State::Error;
 				}
+				else
+					interpreter.state = State::Running;
 			}
 		},
 

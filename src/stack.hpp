@@ -30,19 +30,15 @@ public:
 			return std::nullopt;
 	}
 
-	auto pop_n(const size_t n) -> std::optional<Vector> {
+	auto pop_n(const size_t n) -> bool {
 		assert(n > 0);
 
 		if (has_at_least(n)) {
-			const auto stack_start = stack.cend() - n;
-
-			auto vec = Vector{stack_start, stack.cend()};	// Copy n ints from stack
-			stack.erase(stack_start, stack.cend());		// Erase them from stack
-			
-			return vec;
+			stack.erase(stack.cend() - n, stack.cend());
+			return true;
 		}
 		else
-			return std::nullopt;
+			return false;
 	}
 
 	auto dup() -> bool {
