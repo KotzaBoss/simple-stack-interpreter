@@ -20,6 +20,7 @@ foreach (test ${TESTS})
 	
 	target_compile_options(${bin}
 		PRIVATE
+			-O2
 			-Wall
 			-Wextra
 			-Wpedantic
@@ -30,7 +31,6 @@ foreach (test ${TESTS})
 		PRIVATE
 		-fsanitize=undefined,address
 	)
-	
 	
 	add_test(${bin} ${bin})
 endforeach()

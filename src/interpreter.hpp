@@ -50,37 +50,46 @@ private:
 	Stack _stack;
 	State state;
 
+	// Potentially remove references and move assign from rvalue in constructor?
+	std::istream& cin;
+	std::ostream& cout;
 
 public:
 	// Read the input stream to setup the instruction container, state and pc
-	Interpreter(std::istream&& input)
+	Interpreter(std::istream&& program, std::istream& in = std::cin, std::ostream& out = std::cout)
 		: state{State::Running}
+		, cin{in}
+		, cout{out}
 	{
 		auto i = 0;
 		auto line = std::string{};
-		while (std::getline(std::move(input), line)) {
+		while (std::getline(std::move(program), line)) {
 			trim(line);
-			auto line_ss = std::istringstream{std::move(line)};
+			if (line.empty())
+				continue;
+			else {
+				auto line_ss = std::istringstream{std::move(line)};
 
-			auto line_i = Integer{};
-			auto instr_name = std::string{};
-			auto instr_arg = Instruction::Argument{};
+				auto line_i = Integer{};
+				auto instr_name = std::string{};
+				auto instr_arg = Instruction::Argument{};
 
-			line_ss
-				>> line_i
-				>> instr_name
-				;
+				line_ss
+					>> line_i
+					>> instr_name
+					;
 
-			assert(i++ == line_i and "Expect ascending order of instructions");
-			assert(instruction_map.contains(string_hasher(instr_name)) and "Command not expected");
+				assert(i++ == line_i and "Expect ascending order of instructions");
+				assert(instruction_map.contains(string_hasher(instr_name)) and "Command not expected");
 
-			if (not line_ss.eof()) {	// Instruction argument exists
-				auto arg = Integer{};
-				line_ss >> arg;
-				instr_arg = arg;
+				if (not line_ss.eof()) {	// Instruction argument exists
+					auto arg = Integer{};
+					line_ss >> arg;
+					instr_arg = arg;
+				}
+
+				instructions.emplace_back(std::move(instr_name), std::move(instr_arg));
 			}
-
-			instructions.emplace_back(std::move(instr_name), std::move(instr_arg));
 		}
 
 		pc = instructions.cbegin();
@@ -122,7 +131,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 				
 				if (auto i = Integer{};
-					std::cin >> i)
+					interpreter.cin >> i)
 				{
 					interpreter._stack.push(i);
 					interpreter.state = State::Running;
@@ -146,10 +155,10 @@ private:
 				if (const auto top = interpreter._stack.pop_top();
 					top.has_value())
 				{
-					std::cout << *top << '\n';
+					interpreter.cout << *top << '\n';
 				}
 				else
-					std::cout << "null" << '\n';
+					interpreter.cout << "null" << '\n';
 
 				interpreter.state = State::Running;
 			} 
