@@ -25,8 +25,9 @@ struct Interpreter {
 		friend auto operator<< (std::ostream& o, const Instruction& i) -> std::ostream& {
 			o << std::left << std::setw(5) << i.name << ' ';
 			if (i.arg.has_value())
-				o << std::right << std::setw(5) << *i.arg;
-			return o;
+				return o << std::right << std::setw(5) << *i.arg;
+			else
+				return o << "     ";
 		}
 	};
 	using Instructions = std::vector<Instruction>;
@@ -138,6 +139,9 @@ private:
 		}
 		else {
 			const auto prev_pc = pc;
+#ifdef INTERPRETER_REPORT_EXECUTION
+			report_pc(prev_pc);
+#endif
 			const auto& func = instruction_map.at(string_hasher(pc->name));
 			func(*this);
 			// If noone changed the pc then simply increment.
@@ -327,13 +331,22 @@ private:
 					interpreter.state = State::Error;
 				}
 				else {
-					if (const auto top = stack.pop_top(), second = stack.pop_top();
-						*second == 0)
-					{
-						interpreter.pc = interpreter.instructions.cbegin() + *top;
-					}
 
-					interpreter.state = State::Running;
+					if (const auto top = *stack.pop_top(), second = *stack.pop_top();
+						second == 0)
+					{
+						if (0 <= top and static_cast<size_t>(top) < interpreter.instructions.size()) {
+							interpreter.pc = interpreter.instructions.cbegin() + top;
+							interpreter.state = State::Running;
+						}
+						else {
+							std::cerr
+								<< "\tError: JMPZ: requested jump to " << top
+								<< " is past end of program "
+								<< (interpreter.instructions.size() - 1) << '\n';
+							interpreter.state = State::Error;
+						}
+					}
 				}
 			} 
 		},
@@ -406,6 +419,15 @@ private:
 		);
 	}
 
+	auto report_pc(const PC& pc) const -> void {
+		std::cerr
+			<< "Executing: "
+			<< std::right << std::setw(3) << std::distance(instructions.cbegin(), pc) << ' '
+			<< *pc << '\t'
+			<< _stack
+			<< '\n'
+			;
+	}
 
 public:
 	friend auto operator<< (std::ostream& o, const Interpreter& interp) -> std::ostream& {

@@ -54,9 +54,11 @@ public:
 	auto mul() -> bool { return pop_2_push_op(std::multiplies{}	); }
 	auto add() -> bool { return pop_2_push_op(std::plus{}		); }
 	auto sub() -> bool { return pop_2_push_op(std::minus{}		); }
-	auto gt () -> bool { return pop_2_push_op(std::greater{}	); }
-	auto lt () -> bool { return pop_2_push_op(std::less{}		); }
-	auto eq () -> bool { return pop_2_push_op(std::equal_to{}	); }
+
+	// Comparisons are specified to be inverted: 0 for True and 1 for False
+	auto gt () -> bool { return pop_2_push_op(std::less_equal{}	); }
+	auto lt () -> bool { return pop_2_push_op(std::greater_equal{}	); }
+	auto eq () -> bool { return pop_2_push_op(std::not_equal_to{}	); }
 
 	auto rot(const size_t n) -> bool {
 		assert(n > 0 and "Might as well have a NOOP instruction");

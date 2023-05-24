@@ -1,0 +1,58 @@
+# Prepare exits
+0 PUSH 0	# if input < 0
+1 PUSH 1	# if input == 0
+2 READ		#	0 1 ?
+# if input < 0
+	3 DUP		#	0 1 -1 -1
+	4 PUSH 0	#	0 1 -1 -1 0
+	5 ROT 2		#	0 1 -1 0 -1
+	6 LT		#	0 1 -1 0
+	7 PUSH 43	#	0 1 -1 0 20
+	8 JMPZ		#	0 1 -1 (goto 20)
+# else if input == 0
+	9 DUP		#	0 1 0 0
+	10 PUSH 0	#	0 1 0 0 0
+	11 EQ		#	0 1 0 0
+	12 PUSH 44	#	0 1 0 0 21
+	13 JMPZ		#	0 1 0 (goto 21)
+# else if input == 1
+	14 DUP		#	0 1 1 1
+	15 PUSH 1	#	0 1 1 1 1
+	16 EQ		#	0 1 1 0
+	17 PUSH 45	#	0 1 1 0 21
+	18 JMPZ		#	0 1 1 (goto 21)
+# else <factorial>
+	19 ROT 2	#	0 4 1
+	20 POP 1	#	0 4
+	21 DUP		#	0 4 4
+	22 PUSH 1	#	0 4 4 1
+	23 ROT 2	#	0 4 1 4
+	24 SUB		#	0 4 3
+	# if SUBed until TOP == 1
+		25 DUP		#	0 4 3 3			| 0 4 3 2 1 1
+		26 PUSH 1	#	0 4 3 3 1		| 0 4 3 2 1 1 1
+		27 EQ		#	0 4 3 1			| 0 4 3 2 1 0
+		28 PUSH 33	#	0 4 3 1 multiply	| 0 4 3 2 1 0 multiply
+		29 JMPZ		#	0 4 3 			| 0 4 3 2 1 (goto multiply)
+	# else goto factorial
+		30 PUSH 0	#	0 4 3 0
+		31 PUSH 21	#	0 4 3 0 factorial
+		32 JMPZ		#	0 4 3
+	# <multiply> stack
+		33 MUL		#	0 4 3 2
+	# if SECOND is 0 goto done
+		34 ROT 2	#	0 4 2 3		| 24 0
+		35 DUP		#	0 4 2 3 3	| 24 0 0
+		36 PUSH 0	#	0 4 2 3 3 0	| 24 0 0 0
+		37 EQ		#	0 4 2 3 1	| 24 0 0
+		38 PUSH 44	#	0 4 2 3 1 done	| 24 0 0 done
+		39 JMPZ		#	0 4 2 3		| 24 0 (goto done)
+	# else repeat multiplication
+		40 PUSH 0	#	0 4 2 3 0
+		41 PUSH 33	#	0 4 2 3 0 multiply 
+		42 JMPZ		#	0 4 2 3
+
+# Exits		#	== 0	|	== 1	|	< 0
+43 POP 1	#		|		|	0 1
+44 POP 1	#	0 1	|		|	0
+45 WRITE	#	1	|	1	|	0
