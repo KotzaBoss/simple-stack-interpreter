@@ -160,7 +160,7 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: READ: arguments are not expected\n";
 				
 				if (auto i = Integer{};
 					interpreter.cin >> i)
@@ -170,7 +170,7 @@ private:
 				}
 				else
 				{
-					std::cerr << "\tError: could not read integer from stdin\n";
+					std::cerr << "\tError: READ: could not read integer from stdin\n";
 					interpreter.state = State::Error;
 				}
 			}
@@ -182,7 +182,7 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: WRITE: arguments are not expected\n";
 
 				if (const auto top = interpreter._stack.pop_top();
 					top.has_value())
@@ -202,10 +202,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: DUP: arguments are not expected\n";
 
 				if (not interpreter._stack.dup()) {
-					std::cerr << "\tError: failed to duplicate, stack is empty\n";
+					std::cerr << "\tError: DUP: failed, stack is empty\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -219,11 +219,11 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: MUL: arguments are not expected\n";
 
 
 				if (not interpreter._stack.mul()) {
-					std::cerr << "\tError: failed to mul, stack does not have 2 ints\n";
+					std::cerr << "\tError: MUL: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -236,10 +236,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: ADD: arguments are not expected\n";
 
 				if (not interpreter._stack.add()) {
-					std::cerr << "\tError: failed to add, stack does not have 2 ints\n";
+					std::cerr << "\tError: ADD: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -252,10 +252,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: SUB: arguments are not expected\n";
 
 				if (not interpreter._stack.sub()) {
-					std::cerr << "\tError: failed to sub, stack does not have 2 ints\n";
+					std::cerr << "\tError: SUB: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -268,10 +268,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: GT: arguments are not expected\n";
 
 				if (not interpreter._stack.gt()) {
-					std::cerr << "\tError: failed to gt, stack does not have 2 ints\n";
+					std::cerr << "\tError: GT: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -284,10 +284,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: LT: arguments are not expected\n";
 
 				if (not interpreter._stack.lt()) {
-					std::cerr << "\tError: failed to lt, stack does not have 2 ints\n";
+					std::cerr << "\tError: LT: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -300,10 +300,10 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: EQ: arguments are not expected\n";
 
 				if (not interpreter._stack.eq()) {
-					std::cerr << "\tError: failed to eq, stack does not have 2 ints\n";
+					std::cerr << "\tError: EQ: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -317,13 +317,13 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
-					std::cerr << "\tWarning: arguments are not expected\n";
+					std::cerr << "\tWarning: JMPZ: arguments are not expected\n";
 
 
 				if (auto& stack = interpreter._stack;
 					not stack.has_at_least(2))
 				{
-					std::cerr << "\tError: stack does not have at least 2 int\n";
+					std::cerr << "\tError: JMPZ: stack does not have at least 2 int\n";
 					interpreter.state = State::Error;
 				}
 				else {
@@ -344,7 +344,7 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (not instr.arg.has_value()) {
-					std::cerr << "\tError: arguments expected\n";
+					std::cerr << "\tError: PUSH: arguments expected\n";
 					interpreter.state = State::Error;
 				}
 				else {
@@ -359,11 +359,11 @@ private:
 				const auto& instr = *interpreter.pc;
 
 				if (not instr.arg.has_value()) {
-					std::cerr << "\tError: arguments expected\n";
+					std::cerr << "\tError: POP: arguments expected\n";
 					interpreter.state = State::Error;
 				}
 				else if (not interpreter._stack.pop_n(*instr.arg)) {
-					std::cerr << "\tError: stack does not have at least " << *instr.arg << " ints\n";
+					std::cerr << "\tError: POP: stack does not have at least " << *instr.arg << " ints\n";
 					interpreter.state = State::Error;
 				}
 				else
