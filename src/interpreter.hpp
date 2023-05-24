@@ -50,9 +50,11 @@ private:
 	Stack _stack;
 	State state;
 
-	// Potentially remove references and move assign from rvalue in constructor?
+// Streams
+private:
 	std::istream& cin;
 	std::ostream& cout;
+
 
 public:
 	// Read the input stream to setup the instruction container, state and pc
@@ -138,7 +140,7 @@ private:
 				}
 				else
 				{
-					std::cerr << "\tError: could not read integer from stdin";
+					std::cerr << "\tError: could not read integer from stdin\n";
 					interpreter.state = State::Error;
 				}
 			}
@@ -173,7 +175,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.dup()) {
-					std::cerr << "\tError: failed to duplicate, stack is empty";
+					std::cerr << "\tError: failed to duplicate, stack is empty\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -191,7 +193,7 @@ private:
 
 
 				if (not interpreter._stack.mul()) {
-					std::cerr << "\tError: failed to mul, stack does not have 2 ints";
+					std::cerr << "\tError: failed to mul, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -207,7 +209,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.add()) {
-					std::cerr << "\tError: failed to add, stack does not have 2 ints";
+					std::cerr << "\tError: failed to add, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -223,7 +225,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.sub()) {
-					std::cerr << "\tError: failed to sub, stack does not have 2 ints";
+					std::cerr << "\tError: failed to sub, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -239,7 +241,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.gt()) {
-					std::cerr << "\tError: failed to gt, stack does not have 2 ints";
+					std::cerr << "\tError: failed to gt, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -255,7 +257,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.lt()) {
-					std::cerr << "\tError: failed to lt, stack does not have 2 ints";
+					std::cerr << "\tError: failed to lt, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
@@ -271,7 +273,7 @@ private:
 					std::cerr << "\tWarning: arguments are not expected\n";
 
 				if (not interpreter._stack.eq()) {
-					std::cerr << "\tError: failed to eq, stack does not have 2 ints";
+					std::cerr << "\tError: failed to eq, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
 				else
