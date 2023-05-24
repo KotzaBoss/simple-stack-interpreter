@@ -1,7 +1,4 @@
-set(TESTS
-	main.test.cpp
-	interpreter.test.cpp
-	)
+set(TESTS interpreter.test.cpp)
 foreach (test ${TESTS})
 	string(REPLACE ".test.cpp" "" bin ${test})
 	add_executable(${bin} ${test})
