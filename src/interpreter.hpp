@@ -40,7 +40,7 @@ struct Interpreter {
 	using Interpreter_Mutator = std::function<void(Interpreter&)>;
 
 	enum class State {
-		Running, Error, Done
+		Idle, Running, Error, Done
 	};
 
 
@@ -58,11 +58,39 @@ private:
 
 public:
 	// Read the input stream to setup the instruction container, state and pc
-	Interpreter(std::istream&& program, std::istream& in = std::cin, std::ostream& out = std::cout)
-		: state{State::Running}
+	Interpreter(std::istream& in = std::cin, std::ostream& out = std::cout)
+		: state{State::Idle}
 		, cin{in}
 		, cout{out}
-	{
+	{}
+
+
+	struct Execution_Result {
+		std::optional<Integer> top;
+		State state;
+	};
+	auto run(std::istream&& program, const std::function<void(Execution_Result&&)> callback) -> bool {
+		if (not prepare(program))
+			return false;
+		else {
+			state = State::Running;
+			while (state == State::Running) {
+				callback(execute());
+			}
+			return true;
+		}
+	}
+
+// Prepare and Execute
+private:
+	auto prepare(std::istream& program) -> bool {
+		// Reset
+		instructions.clear();
+		pc = instructions.cbegin();
+		_stack.clear();
+		state = State::Idle;
+
+		// Read program and prepare interpreter
 		auto i = 0;
 		auto line = std::string{};
 		while (std::getline(std::move(program), line)) {
@@ -94,17 +122,20 @@ public:
 			}
 		}
 
-		pc = instructions.cbegin();
+		if (instructions.empty())
+			return false;
+		else {
+			pc = instructions.cbegin();
+			return true;
+		}
 	}
 
-	struct Execution_Result {
-		std::optional<Integer> top;
-		State state;
-	};
 	// Should not throw since we ensure hashes exist in constructor
 	auto execute() noexcept -> Execution_Result {
-		if (pc == instructions.end())
-			return { std::nullopt, State::Done };
+		if (pc == instructions.end()) {
+			state = State::Done;
+			return { std::nullopt, state };
+		}
 		else {
 			const auto prev_pc = pc;
 			const auto& func = instruction_map.at(string_hasher(pc->name));
@@ -118,7 +149,6 @@ public:
 			return { _stack.top(), state };
 		}
 	}
-
 
 // Hashing and Instruction->Interpreter_Mutator mapping 
 private:
@@ -157,10 +187,10 @@ private:
 				if (const auto top = interpreter._stack.pop_top();
 					top.has_value())
 				{
-					interpreter.cout << *top << '\n';
+					interpreter.cout << *top << ' ';
 				}
 				else
-					interpreter.cout << "null" << '\n';
+					interpreter.cout << "null" << ' ';
 
 				interpreter.state = State::Running;
 			} 
@@ -375,6 +405,7 @@ private:
 			l.end()
 		);
 	}
+
 
 public:
 	friend auto operator<< (std::ostream& o, const Interpreter& interp) -> std::ostream& {

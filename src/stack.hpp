@@ -73,11 +73,20 @@ public:
 			return false;
 	}
 
+public:
 	auto top() const -> std::optional<Integer> {
 		if (not stack.empty())
 			return stack.back();
 		else
 			return std::nullopt;
+	}
+
+	auto clear() -> void {
+		stack.clear();
+	}
+
+	auto is_empty() const -> bool {
+		return stack.empty();
 	}
 
 	auto has_at_least(const size_t n) const -> bool {
