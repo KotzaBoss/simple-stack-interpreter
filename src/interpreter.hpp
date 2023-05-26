@@ -41,7 +41,7 @@ struct Interpreter {
 	using Interpreter_Mutator = std::function<void(Interpreter&)>;
 
 	enum class State {
-		Idle, Running, Error, Done
+		Running, Error, Done
 	};
 
 
@@ -60,20 +60,67 @@ private:
 public:
 	// Read the input stream to setup the instruction container, state and pc
 	Interpreter(std::istream& in = std::cin, std::ostream& out = std::cout)
-		: state{State::Idle}
-		, cin{in}
+		: cin{in}
 		, cout{out}
 	{}
 
+	auto prepare(std::istream& program) -> bool {
+		// Reset program
+		instructions.clear();
+		_stack.clear();
+
+		{ // Read program and prepare interpreter
+			auto i = 0;
+			auto line = std::string{};
+			while (std::getline(program, line)) {
+				trim(line);
+				if (line.empty())
+					continue;
+				else {
+					auto line_ss = std::istringstream{std::move(line)};
+
+					auto line_i = Integer{};
+					auto instr_name = std::string{};
+					auto instr_arg = Instruction::Argument{};
+
+					line_ss
+						>> line_i
+						>> instr_name
+						;
+
+					assert(i++ == line_i and "Expect ascending order of instructions");
+					assert(instruction_map.contains(string_hasher(instr_name)) and "Command not expected");
+
+					if (not line_ss.eof()) {	// Instruction argument exists
+						auto arg = Integer{};
+						line_ss >> arg;
+						instr_arg = arg;
+					}
+
+					instructions.emplace_back(std::move(instr_name), std::move(instr_arg));
+				}
+			}
+		}
+
+		if (instructions.empty()) {
+			std::cerr << "Error: prepare: Failed to read any instructions\n";
+			return false;
+		}
+		else
+			return true;
+	}
 
 	struct Execution_Result {
 		std::optional<Integer> top;
 		State state;
 	};
-	auto run(std::istream&& program, const std::function<void(Execution_Result&&)> callback) -> bool {
-		if (not prepare(program))
+	auto run(const std::function<void(Execution_Result&&)> callback) -> bool {
+		if (instructions.empty()) {
+			std::cerr << "Error: run: No program has been prepared\n";
 			return false;
+		}
 		else {
+			pc = instructions.cbegin();
 			state = State::Running;
 			while (state == State::Running) {
 				callback(execute());
@@ -84,52 +131,6 @@ public:
 
 // Prepare and Execute
 private:
-	auto prepare(std::istream& program) -> bool {
-		// Reset
-		instructions.clear();
-		pc = instructions.cbegin();
-		_stack.clear();
-		state = State::Idle;
-
-		// Read program and prepare interpreter
-		auto i = 0;
-		auto line = std::string{};
-		while (std::getline(std::move(program), line)) {
-			trim(line);
-			if (line.empty())
-				continue;
-			else {
-				auto line_ss = std::istringstream{std::move(line)};
-
-				auto line_i = Integer{};
-				auto instr_name = std::string{};
-				auto instr_arg = Instruction::Argument{};
-
-				line_ss
-					>> line_i
-					>> instr_name
-					;
-
-				assert(i++ == line_i and "Expect ascending order of instructions");
-				assert(instruction_map.contains(string_hasher(instr_name)) and "Command not expected");
-
-				if (not line_ss.eof()) {	// Instruction argument exists
-					auto arg = Integer{};
-					line_ss >> arg;
-					instr_arg = arg;
-				}
-
-				instructions.emplace_back(std::move(instr_name), std::move(instr_arg));
-			}
-		}
-
-		if (instructions.empty())
-			return false;
-		else {
-			pc = instructions.cbegin();
-			return true;
-		}
-	}
 
 	// Should not throw since we ensure hashes exist in constructor
 	auto execute() noexcept -> Execution_Result {
