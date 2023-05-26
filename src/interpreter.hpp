@@ -48,7 +48,7 @@ struct Interpreter {
 private:
 	Instructions instructions;
 	PC pc;
-	Stack _stack;
+	Stack stack;
 	State state;
 
 // Streams
@@ -67,7 +67,7 @@ public:
 	auto prepare(std::istream& program) -> bool {
 		// Reset program
 		instructions.clear();
-		_stack.clear();
+		stack.clear();
 
 		{ // Read program and prepare interpreter
 			auto i = 0;
@@ -151,7 +151,7 @@ private:
 			// But that is just begging for "off by one" problems both in the code and in the mind...
 			if (prev_pc == pc)
 				++pc;
-			return { _stack.top(), state };
+			return { stack.top(), state };
 		}
 	}
 
@@ -170,7 +170,7 @@ private:
 				if (auto i = Integer{};
 					interpreter.cin >> i)
 				{
-					interpreter._stack.push(i);
+					interpreter.stack.push(i);
 					interpreter.state = State::Running;
 				}
 				else
@@ -189,7 +189,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: WRITE: arguments are not expected\n";
 
-				if (const auto top = interpreter._stack.pop_top();
+				if (const auto top = interpreter.stack.pop_top();
 					top.has_value())
 				{
 					interpreter.cout << *top << ' ';
@@ -209,7 +209,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: DUP: arguments are not expected\n";
 
-				if (not interpreter._stack.dup()) {
+				if (not interpreter.stack.dup()) {
 					std::cerr << "\tError: DUP: failed, stack is empty\n";
 					interpreter.state = State::Error;
 				}
@@ -227,7 +227,7 @@ private:
 					std::cerr << "\tWarning: MUL: arguments are not expected\n";
 
 
-				if (not interpreter._stack.mul()) {
+				if (not interpreter.stack.mul()) {
 					std::cerr << "\tError: MUL: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -243,7 +243,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: ADD: arguments are not expected\n";
 
-				if (not interpreter._stack.add()) {
+				if (not interpreter.stack.add()) {
 					std::cerr << "\tError: ADD: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -259,7 +259,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: SUB: arguments are not expected\n";
 
-				if (not interpreter._stack.sub()) {
+				if (not interpreter.stack.sub()) {
 					std::cerr << "\tError: SUB: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -275,7 +275,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: GT: arguments are not expected\n";
 
-				if (not interpreter._stack.gt()) {
+				if (not interpreter.stack.gt()) {
 					std::cerr << "\tError: GT: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -291,7 +291,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: LT: arguments are not expected\n";
 
-				if (not interpreter._stack.lt()) {
+				if (not interpreter.stack.lt()) {
 					std::cerr << "\tError: LT: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -307,7 +307,7 @@ private:
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: EQ: arguments are not expected\n";
 
-				if (not interpreter._stack.eq()) {
+				if (not interpreter.stack.eq()) {
 					std::cerr << "\tError: EQ: failed, stack does not have 2 ints\n";
 					interpreter.state = State::Error;
 				}
@@ -325,7 +325,7 @@ private:
 					std::cerr << "\tWarning: JMPZ: arguments are not expected\n";
 
 
-				if (auto& stack = interpreter._stack;
+				if (auto& stack = interpreter.stack;
 					not stack.has_at_least(2))
 				{
 					std::cerr << "\tError: JMPZ: stack does not have at least 2 int\n";
@@ -362,7 +362,7 @@ private:
 					interpreter.state = State::Error;
 				}
 				else {
-					interpreter._stack.push(*instr.arg);
+					interpreter.stack.push(*instr.arg);
 					interpreter.state = State::Running;
 				}
 			} 
@@ -376,7 +376,7 @@ private:
 					std::cerr << "\tError: POP: arguments expected\n";
 					interpreter.state = State::Error;
 				}
-				else if (not interpreter._stack.pop_n(*instr.arg)) {
+				else if (not interpreter.stack.pop_n(*instr.arg)) {
 					std::cerr << "\tError: POP: stack does not have at least " << *instr.arg << " ints\n";
 					interpreter.state = State::Error;
 				}
@@ -394,7 +394,7 @@ private:
 					std::cerr << "\tError: arguments expected\n";
 					interpreter.state = State::Error;
 				}
-				else if (not interpreter._stack.rot(*instr.arg)) {
+				else if (not interpreter.stack.rot(*instr.arg)) {
 					std::cerr << "\tError: stack does not have at least " << *instr.arg << " ints\n";
 					interpreter.state = State::Error;
 				}
@@ -425,7 +425,7 @@ private:
 			<< "Executing: "
 			<< std::right << std::setw(3) << std::distance(instructions.cbegin(), pc) << ' '
 			<< *pc << '\t'
-			<< _stack
+			<< stack
 			<< '\n'
 			;
 	}
@@ -444,7 +444,7 @@ public:
 		if (interp.pc == interp.instructions.end())
 			o << "->";
 
-		return o << '\n' << interp._stack;
+		return o << '\n' << interp.stack;
 	}
 };
 
