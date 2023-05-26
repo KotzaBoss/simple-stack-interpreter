@@ -16,6 +16,8 @@ namespace fs = std::filesystem;
 
 using namespace std::literals;
 
+constexpr auto RANDOM_CASES = 1'000;
+
 auto simple_factorial(Interpreter::Integer x) -> Interpreter::Integer {
 	assert(x >= 0);
 	auto result = 1;
@@ -29,186 +31,141 @@ auto small_rand() -> auto {
 	return std::rand() % 100;
 }
 
+struct Test_Input {
+	using Integer = Interpreter::Integer;
 
-TEST_CASE ("pow2") {
-	INFO("sizeof(Interpreter::Integer) == ", sizeof(Interpreter::Integer));
-	INFO("std::numeric_limits<Interpreter::Integer>::max() == ", std::numeric_limits<Interpreter::Integer>::max());
+	Integer input, expected;
 
-	constexpr auto PROGRAM = R"end(
-								# 	Positive	|	Non-positive
-	0 READ							# 	5		|	-1
-	1 DUP							# 	5 5		|	-1 -1
-	2 PUSH 0						# 	5 5 0		|	-1 -1 0
-	3 LT		# Comparisons return 0 for true		#	5 0		|	-1  1
-	4 PUSH 8						# 	5 0 8		|	-1  1 8
-	5 JMPZ		# Remember the 2 values are dropped	# 	5		|	-1 
-	6 POP 1							# 	skipped 	|	empty
-	7 PUSH 0						# 	skipped		|	0
-	8 DUP							# 	5 5		|	0 0
-	9 MUL							# 	25		|	0
-	10 WRITE
-	)end";
+	static auto negative_zero() -> Test_Input {
+		return {-small_rand(), 0};
+	}
 
-	// Generate alot of random and specific test cases
-	struct Test_Case {
-		using Integer = Interpreter::Integer;
-
-		Integer input, expected;
-	};
-	constexpr auto RANDOM_CASES = 100'000;
-	auto read_inputs = std::vector<Test_Case>{};
-	read_inputs.reserve(
-		RANDOM_CASES	// Random positive cases
-		+ RANDOM_CASES	// Random negative cases
-		+ 1		// 0
-		+ 1		// 1
-	);
-	read_inputs.resize(2 * RANDOM_CASES);
-
-	// Positive
-	// [0, RANDOM_CASES)
-	rs::generate(vw::counted(read_inputs.begin(), RANDOM_CASES),
-		[] {
-			const auto input = small_rand();
-			// Kept the `input * input` to replicate the Stacks MUL operation, there is going to be overflows for
-			// big numbers but at least keep the "bug consistent". For squared numbers that are in the range int32
-			// there is not problem.
-			return Test_Case{input, input * input};
-		}
-	);
-
-	// Negative
-	// [RANDOM_CASES, RANDOM_CASES + RANDOM_CASES)
-	rs::generate(vw::counted(read_inputs.begin() + RANDOM_CASES, RANDOM_CASES),
-		[] {
-			return Test_Case{-std::rand(), 0};
-		}
-	);
-	
-	// Edges
-	read_inputs.push_back({0, 0});
-	read_inputs.push_back({1, 1});
+	friend auto operator<< (std::ostream& o, const Test_Input& ti) -> std::ostream& {
+		return o << "Test_Input{input=" << ti.input << ", " << "expected=" << ti.expected << '}';
+	}
+};
 
 
-	// Run Interpreter
-	rs::for_each(read_inputs,
-		[] (const auto& input_pair) {
-			// Setup in/out streams
-			auto cin = std::istringstream{std::to_string(input_pair.input)};
-			auto cout = std::stringstream{};
+TEST_CASE ("Interpreter") {
+	CAPTURE(sizeof(Interpreter::Integer));
+	CAPTURE(std::numeric_limits<Interpreter::Integer>::max());
 
-			REQUIRE(Interpreter{cin, cout}
-				.run(std::istringstream{PROGRAM},
-					[&] (const auto& execution_result) {
-						switch (execution_result.state) {
-							case Interpreter::State::Running:
-								return;
-
-							case Interpreter::State::Done: {
-								auto i = Interpreter::Integer{};
-								cout >> i;
-								CAPTURE(input_pair.input);
-								CHECK_EQ(i, input_pair.expected);
-								return;
-							}
-
-							case Interpreter::State::Error:
-							default:
-								FAIL("Interpreter entered the State::Error");
-						}
-					}
-				)
-			);
-		}
-	);
-}
-
-
-TEST_CASE ("Naive Factorial") {
-	const auto naive_factorial_path = fs::current_path() / "interpreter.naive_factorial.txt";
-	REQUIRE_MESSAGE(fs::exists(naive_factorial_path), naive_factorial_path);
-
-	struct Test_Case {
-		using Integer = Interpreter::Integer;
-
-		Integer input, expected;
-	};
-
-	constexpr auto RANDOM_CASES = 100'000;
-	auto inputs = std::vector<Test_Case>{};
-	inputs.reserve(
-		RANDOM_CASES
-		+ 1	// 0 -> 1
-		+ 1	// 1 -> 1
-	);
-
-	inputs.resize(RANDOM_CASES);
-	rs::generate(vw::counted(inputs.begin(), RANDOM_CASES),
-		[] {
-			const auto input = 2 + small_rand();
-			return Test_Case{input, simple_factorial(input)};
-		}
-	);
-
-	inputs.push_back({0, 1});
-	inputs.push_back({1, 1});
-
-	std::cerr << inputs.size() << '\n';
-
-	// Setup in/out streams
+	// In/out streams
 	auto cin = std::stringstream{};
 	auto cout = std::stringstream{};
 
 	auto interpreter = Interpreter{cin, cout};
 
-	// Valid input values (>= 0)
-	rs::for_each(inputs,
-		[&] (const auto& input_pair) {
-			cin << input_pair.input << ' ';	// Space for the "separator" of subsequent values
-			REQUIRE(interpreter.run(std::ifstream{naive_factorial_path},
-				[&] (const auto& execution_result) {
-					switch (execution_result.state) {
-						case Interpreter::State::Running:
-							return;
+	auto program = std::stringstream{};
 
-						case Interpreter::State::Done: {
-							auto i = Interpreter::Integer{};
-							cout >> i;
-							CAPTURE(input_pair.input);
-							CHECK_EQ(i, input_pair.expected);
-							return;
-						}
+	auto test_inputs = std::vector<Test_Input>{};
 
-						case Interpreter::State::Error:
-						default:
-							FAIL("Interpreter entered the State::Error: ", input_pair.input, " ", input_pair.expected);
-					}
-				}
-			));
-		}
-	);
+	SUBCASE ("pow2") {
+		program << R"end(
+										# 	Positive	|	Non-positive
+			0 READ							# 	5		|	-1
+			1 DUP							# 	5 5		|	-1 -1
+			2 PUSH 0						# 	5 5 0		|	-1 -1 0
+			3 LT		# Comparisons return 0 for true		#	5 0		|	-1  1
+			4 PUSH 8						# 	5 0 8		|	-1  1 8
+			5 JMPZ		# Remember the 2 values are dropped	# 	5		|	-1 
+			6 POP 1							# 	skipped 	|	empty
+			7 PUSH 0						# 	skipped		|	0
+			8 DUP							# 	5 5		|	0 0
+			9 MUL							# 	25		|	0
+			10 WRITE
+		)end";
 
-	// Invalid input values (< 0)
-	for (const auto i : vw::iota(1, RANDOM_CASES)) {
-		cin << -i << ' ';
-		REQUIRE(interpreter.run(std::ifstream{naive_factorial_path},
-			[&] (const auto& execution_result) {
-				switch (execution_result.state) {
-					case Interpreter::State::Running:
-						return;
+		test_inputs.reserve(
+			2 * RANDOM_CASES	// Random cases (positive/negatives)
+			+ 1			// 0
+			+ 1			// 1
+		);
 
-					case Interpreter::State::Done: {
-						auto i = Interpreter::Integer{};
-						cout >> i;
-						CHECK_EQ(i, 0);
-						return;
-					}
+		test_inputs.resize(2 * RANDOM_CASES);
 
-					case Interpreter::State::Error:
-					default:
-						FAIL("Interpreter entered the State::Error: ", i);
-				}
-			}
-		));
+		// Positive
+		// [0, RANDOM_CASES)
+		rs::generate(vw::counted(test_inputs.begin(), RANDOM_CASES), [] {
+			const auto input = 2 + small_rand();	// We deal with 1 specifically
+			// Kept the `input * input` to replicate the Stacks MUL operation, there is going to be overflows for
+			// big numbers but at least keep the "bug consistent". For squared numbers that are in the range int32
+			// there is not problem.
+			return Test_Input{input, input * input};
+		});
+
+		// Negative
+		// [RANDOM_CASES, 2 * RANDOM_CASES)
+		rs::generate(vw::counted(test_inputs.begin() + RANDOM_CASES, RANDOM_CASES), Test_Input::negative_zero);
+		
+		// Edges
+		test_inputs.push_back({0, 0});
+		test_inputs.push_back({1, 1});
 	}
+
+	SUBCASE ("Naive Factorial") {
+		const auto naive_factorial_path = fs::current_path() / "interpreter.naive_factorial.txt";
+		REQUIRE_MESSAGE(fs::exists(naive_factorial_path), naive_factorial_path);
+
+		// Thanks: https://stackoverflow.com/questions/132358/how-to-read-file-content-into-istringstream
+		auto naive_factorial = std::ifstream{naive_factorial_path};
+		program << naive_factorial.rdbuf();
+
+		test_inputs.reserve(
+			2 * RANDOM_CASES	// Random cases (positive/negatives)
+			+ 1			// 0! = 1
+			+ 1			// 1! = 1
+		);
+
+		test_inputs.resize(2 * RANDOM_CASES);
+
+		// Positive
+		// [0, RANDOM_CASES)
+		rs::generate(vw::counted(test_inputs.begin(), RANDOM_CASES), [] {
+			const auto input = 2 + small_rand();	// We deal with 1 specifically
+			return Test_Input{input, simple_factorial(input)};
+		});
+
+		// Negative
+		// [RANDOM_CASES, 2 * RANDOM_CASES)
+		rs::generate(vw::counted(test_inputs.begin() + RANDOM_CASES, RANDOM_CASES), Test_Input::negative_zero);
+
+		// Edges
+		test_inputs.push_back({0, 1});
+		test_inputs.push_back({1, 1});
+	}
+
+	interpreter.prepare(program);
+
+	// Run Interpreter
+	rs::for_each(test_inputs, [&] (const auto& test_input) {
+		CAPTURE(test_input);
+		cin << test_input.input << ' ';
+		REQUIRE(interpreter.run([&] (const auto& execution_result) {
+			switch (execution_result.state) {
+				case Interpreter::State::Running:
+					return;
+
+				case Interpreter::State::Done: {
+					auto out = Interpreter::Integer{};
+					cout >> out;
+					CHECK_EQ(out, test_input.expected);
+					return;
+				}
+
+				case Interpreter::State::Error:
+				default:
+					FAIL("Interpreter entered the State::Error");
+			}
+		}));
+	});
 }
+
+
+TEST_CASE ("Interpreter Empty Program") {
+	auto program = std::istringstream{""};
+	auto interpreter = Interpreter{};
+	REQUIRE_FALSE(interpreter.prepare(program));
+	REQUIRE_FALSE(interpreter.run([] (const auto&) { FAIL("Interpreter::run() should not begin running anything"); }));
+}
+
