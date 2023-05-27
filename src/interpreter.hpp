@@ -13,6 +13,25 @@
 
 
 // Not alot of error handling will be done to keep the code cleaner
+//
+// Usage:
+//
+// auto interpreter = Interpreter{some_input_stream, some_output_stream};
+//
+// if (not interpreter.prepare(some_program_input_stream)) {
+// 	// Handle error
+// }
+//
+// if (not interpreter.run(
+// 	[] (auto&& execution_result) {
+// 		switch (execution_result.state) {
+// 			// ...
+// 		}
+// 	}))
+// {
+// 	// Handle error
+// }
+//
 struct Interpreter {
 	using Integer = Stack::Integer;
 
@@ -58,12 +77,13 @@ private:
 
 
 public:
-	// Read the input stream to setup the instruction container, state and pc
+	// Setup input/output streams
 	Interpreter(std::istream& in = std::cin, std::ostream& out = std::cout)
 		: cin{in}
 		, cout{out}
 	{}
 
+	// Prepare program
 	auto prepare(std::istream& program) -> bool {
 		// Reset program
 		instructions.clear();
@@ -110,11 +130,12 @@ public:
 			return true;
 	}
 
+	// Run program
 	struct Execution_Result {
 		std::optional<Integer> top;
 		State state;
 	};
-	auto run(const std::function<void(Execution_Result&&)> callback) -> bool {
+	auto run(std::function<void(Execution_Result&&)>&& callback) -> bool {
 		if (instructions.empty()) {
 			std::cerr << "Error: run: No program has been prepared\n";
 			return false;

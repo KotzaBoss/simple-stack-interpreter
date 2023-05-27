@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 using namespace std::literals;
 
-constexpr auto RANDOM_CASES = 1'000;
+constexpr auto RANDOM_CASES = 10'000;
 
 auto simple_factorial(Interpreter::Integer x) -> Interpreter::Integer {
 	assert(x >= 0);
@@ -135,13 +135,13 @@ TEST_CASE ("Interpreter") {
 		test_inputs.push_back({1, 1});
 	}
 
-	interpreter.prepare(program);
+	REQUIRE(interpreter.prepare(program));
 
 	// Run Interpreter
 	rs::for_each(test_inputs, [&] (const auto& test_input) {
 		CAPTURE(test_input);
 		cin << test_input.input << ' ';
-		REQUIRE(interpreter.run([&] (const auto& execution_result) {
+		REQUIRE(interpreter.run([&] (auto&& execution_result) {
 			switch (execution_result.state) {
 				case Interpreter::State::Running:
 					return;
