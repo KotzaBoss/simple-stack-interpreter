@@ -50,7 +50,7 @@ struct Interpreter {
 		}
 	};
 	using Instructions = std::vector<Instruction>;
-	
+
 	using PC = Instructions::const_iterator;
 
 	// Hashing
@@ -109,7 +109,7 @@ public:
 						;
 
 					assert(i++ == line_i and "Expect ascending order of instructions");
-					assert(instruction_map.contains(string_hasher(instr_name)) and "Command not expected");
+					assert(instruction_map.contains(instr_name) and "Command not expected");
 
 					if (not line_ss.eof()) {	// Instruction argument exists
 						auto arg = Integer{};
@@ -164,7 +164,7 @@ private:
 #ifdef INTERPRETER_REPORT_EXECUTION
 			report_pc(prev_pc);
 #endif
-			const auto& func = instruction_map.at(string_hasher(pc->name));
+			const auto& func = instruction_map.at(pc->name);
 			func(*this);
 			// If noone changed the pc then simply increment.
 			// This is abit hacky... a simple solution could be to hide any +-1 in a function call
@@ -176,18 +176,17 @@ private:
 		}
 	}
 
-// Hashing and Instruction->Interpreter_Mutator mapping 
+// Hashing and Instruction->Interpreter_Mutator mapping
 private:
-	static constexpr auto string_hasher = String_Hasher{};
-	static inline const auto instruction_map = std::unordered_map<Hash_Result, Interpreter_Mutator>{
-		{ string_hasher("READ"),
+	static inline const auto instruction_map = std::unordered_map<std::string, Interpreter_Mutator>{
+		{ "READ",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
 
 				if (instr.arg.has_value())
 					std::cerr << "\tWarning: READ: arguments are not expected\n";
-				
+
 				if (auto i = Integer{};
 					interpreter.cin >> i)
 				{
@@ -202,7 +201,7 @@ private:
 			}
 		},
 
-		{ string_hasher("WRITE"),
+		{ "WRITE",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -219,10 +218,10 @@ private:
 					interpreter.cout << "null" << ' ';
 
 				interpreter.state = State::Running;
-			} 
+			}
 		},
 
-		{ string_hasher("DUP"),	
+		{ "DUP",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -236,10 +235,10 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
 					// Binary Operations
-		{ string_hasher("MUL"),	
+		{ "MUL",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -254,9 +253,9 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
-		{ string_hasher("ADD"),	
+		{ "ADD",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -270,9 +269,9 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
-		{ string_hasher("SUB"),	
+		{ "SUB",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -286,9 +285,9 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
-		{ string_hasher("GT"),	
+		{ "GT",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -302,9 +301,9 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
-		{ string_hasher("LT"),	
+		{ "LT",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -318,9 +317,9 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
-		{ string_hasher("EQ"),	
+		{ "EQ",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -334,10 +333,10 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
 
-		{ string_hasher("JMPZ"),
+		{ "JMPZ",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -370,10 +369,10 @@ private:
 						}
 					}
 				}
-			} 
+			}
 		},
 
-		{ string_hasher("PUSH"),
+		{ "PUSH",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -386,9 +385,9 @@ private:
 					interpreter.stack.push(*instr.arg);
 					interpreter.state = State::Running;
 				}
-			} 
+			}
 		},
-		{ string_hasher("POP"),	
+		{ "POP",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -406,7 +405,7 @@ private:
 			}
 		},
 
-		{ string_hasher("ROT"),	
+		{ "ROT",
 			[] (Interpreter& interpreter)
 			{
 				const auto& instr = *interpreter.pc;
@@ -421,7 +420,7 @@ private:
 				}
 				else
 					interpreter.state = State::Running;
-			} 
+			}
 		},
 	};
 
